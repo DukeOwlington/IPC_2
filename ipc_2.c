@@ -8,29 +8,39 @@
 /* construct string with program name and arguments */
 char **ParseArguments(char *com) {
   const char *space_char = " ";
-  char **execute_string = NULL;
+  char **exec_str = NULL;
   int count = 1;
 
   com = strtok(com, space_char);
-  execute_string = (char **) realloc(execute_string,
-                                     count * sizeof(*execute_string));
-  execute_string[count - 1] = (char *) malloc(strlen(com) * sizeof(char));
-  strcat(execute_string[count - 1], com);
+  exec_str = (char **) realloc(exec_str, count * sizeof(*exec_str));
+  exec_str[count - 1] = (char *) malloc(strlen(com) * sizeof(char));
+  strcat(exec_str[count - 1], com);
 
   while ((com = strtok(NULL, space_char)) != NULL) {
     count++;
-    execute_string = (char **) realloc(execute_string,
-                                       count * sizeof(*execute_string));
-    execute_string[count - 1] = (char *) malloc(strlen(com) * sizeof(char));
-    strcat(execute_string[count - 1], com);
+    exec_str = (char **) realloc(exec_str, count * sizeof(*exec_str));
+    exec_str[count - 1] = (char *) malloc(strlen(com) * sizeof(char));
+    strcat(exec_str[count - 1], com);
   }
   count++;
-  execute_string = (char **) realloc(execute_string,
-                                     count * sizeof(*execute_string));
-  execute_string[count - 1] = (char *) malloc(sizeof(char));
-  execute_string[count - 1] = NULL;
+  exec_str = (char **) realloc(exec_str, count * sizeof(*exec_str));
+  exec_str[count - 1] = (char *) malloc(sizeof(char));
+  exec_str[count - 1] = NULL;
 
-  return execute_string;
+  return exec_str;
+}
+
+void FreeArray(char **exec_str) {
+  int i;
+  int count = 0;
+
+  while (exec_str[count] != NULL)
+    count++;
+
+  for (i = 0; i < count; i++) {
+    free(exec_str[i]);
+  }
+  free(exec_str);
 }
 
 int main(int argc, char** argv) {
@@ -40,8 +50,8 @@ int main(int argc, char** argv) {
   const char *delim = "|";
   char *com_1;
   char *com_2;
-  char **proc_1;
-  char **proc_2;
+  char **exec_str_1;
+  char **exec_str_2;
   /* process id */
   pid_t pid;
 
@@ -50,28 +60,31 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  com_1 = strtok(argv[1], delim);
-  com_2 = strtok(NULL, delim);
-
-  proc_1 = ParseArguments(com_1);
-  proc_2 = ParseArguments(com_2);
-
   pipe(pipedes);
   pid = fork();
+
   if (pid < 0) {
     perror("fork: ");
     return EXIT_FAILURE;
   }
+
+  com_1 = strtok(argv[1], delim);
+  com_2 = strtok(NULL, delim);
+
   if (pid > 0) {
     close(pipedes[0]);
     dup2(pipedes[1], 1);
     close(pipedes[1]);
-    execvp(*proc_1, proc_1);
+    exec_str_1 = ParseArguments(com_1);
+    execvp(*exec_str_1, exec_str_1);
+    FreeArray(exec_str_1);
   } else {
     close(pipedes[1]);
     dup2(pipedes[0], 0);
     close(pipedes[0]);
-    execvp(*proc_2, proc_2);
+    exec_str_2 = ParseArguments(com_2);
+    execvp(*exec_str_2, exec_str_2);
+    FreeArray(exec_str_2);
   }
 
   wait(&status);
