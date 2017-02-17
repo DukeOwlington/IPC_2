@@ -40,7 +40,7 @@ void FreeArray(char **exec_str) {
   while (exec_str[count] != NULL)
     count++;
 
-  for (i = 0; i <= count; i++) {
+  for (i = 0; i < count; i++) {
     free(exec_str[i]);
   }
   free(exec_str);
